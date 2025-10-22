@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -49,7 +49,53 @@ export function RobotPlanner() {
   const [savedConfigs, setSavedConfigs] = useState<RobotConfig[]>([])
   const [selectedRobotId, setSelectedRobotId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("code")
+  const [isClient, setIsClient] = useState(false)
   const { toast } = useToast()
+
+  // Check of we op de client zijn (voorkomt hydration mismatch)
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Laad opgeslagen robots uit localStorage bij het opstarten
+  useEffect(() => {
+    if (!isClient) return
+
+    const loadSavedConfigs = () => {
+      try {
+        const saved = localStorage.getItem("savedRobotConfigs")
+        if (saved) {
+          const configs = JSON.parse(saved) as RobotConfig[]
+          setSavedConfigs(configs)
+        }
+      } catch (error) {
+        console.error("Error loading saved configs:", error)
+        toast({
+          title: "Fout bij laden",
+          description: "Kon opgeslagen robots niet laden.",
+          variant: "destructive",
+        })
+      }
+    }
+
+    loadSavedConfigs()
+  }, [isClient, toast])
+
+  // Sla robots op in localStorage wanneer savedConfigs verandert
+  useEffect(() => {
+    if (!isClient) return
+
+    try {
+      localStorage.setItem("savedRobotConfigs", JSON.stringify(savedConfigs))
+    } catch (error) {
+      console.error("Error saving configs:", error)
+      toast({
+        title: "Fout bij opslaan",
+        description: "Kon robots niet opslaan.",
+        variant: "destructive",
+      })
+    }
+  }, [savedConfigs, isClient, toast])
 
   const handleGenerate = async (prompt: string, image?: File) => {
     setIsGenerating(true)

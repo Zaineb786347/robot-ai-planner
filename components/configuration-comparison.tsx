@@ -268,7 +268,7 @@ export function ConfigurationComparison({ configs }: ConfigurationComparisonProp
 
                 return (
                   <TableCell key={config.id}>
-                    <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-md">
+                    <Badge className="bg-black text-white shadow-lg font-bold text-sm px-3 py-1">
                       {recommendation}
                     </Badge>
                   </TableCell>
