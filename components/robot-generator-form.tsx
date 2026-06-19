@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Upload, Sparkles } from "lucide-react"
 
 type RobotGeneratorFormProps = {
-  onGenerate: (prompt: string, image?: File) => void
+  onGenerate: (prompt: string, image?: File, withImage?: boolean) => void
   isGenerating: boolean
 }
 
@@ -17,6 +17,7 @@ export function RobotGeneratorForm({ onGenerate, isGenerating }: RobotGeneratorF
   const [prompt, setPrompt] = useState("")
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [withImageGeneration, setWithImageGeneration] = useState(false)
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -33,10 +34,11 @@ export function RobotGeneratorForm({ onGenerate, isGenerating }: RobotGeneratorF
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (prompt.trim() || image) {
-      onGenerate(prompt, image || undefined)
+      onGenerate(prompt, image || undefined, withImageGeneration)
       setPrompt("")
       setImage(null)
       setImagePreview(null)
+      setWithImageGeneration(false)
     }
   }
 
@@ -83,6 +85,15 @@ export function RobotGeneratorForm({ onGenerate, isGenerating }: RobotGeneratorF
               </Button>
             </div>
           )}
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-border"
+              checked={withImageGeneration}
+              onChange={(e) => setWithImageGeneration(e.target.checked)}
+            />
+            <span>Genereer ook product-afbeelding (langzamer)</span>
+          </label>
         </div>
       </div>
 

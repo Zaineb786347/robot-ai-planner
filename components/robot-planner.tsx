@@ -97,7 +97,7 @@ export function RobotPlanner() {
     }
   }, [savedConfigs, isClient, toast])
 
-  const handleGenerate = async (prompt: string, image?: File) => {
+  const handleGenerate = async (prompt: string, image?: File, withImage?: boolean) => {
     setIsGenerating(true)
 
     try {
@@ -122,6 +122,7 @@ export function RobotPlanner() {
         body: JSON.stringify({
           prompt: prompt || "Genereer een basis robot met motoren en sensoren",
           image: imageBase64,
+          withImage: Boolean(withImage),
         }),
       })
 
