@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// Gebruik de Edge runtime voor lagere latency
-export const runtime = "edge"
-
 export async function POST(request: NextRequest) {
   try {
     const { prompt, image, withImage } = await request.json()
