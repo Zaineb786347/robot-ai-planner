@@ -58,7 +58,7 @@ export function RobotGeneratorForm({ onGenerate, isGenerating }: RobotGeneratorF
       </div>
 
       <div className="space-y-2">
-        <Label className="text-foreground">Of upload een afbeelding</Label>
+        <p className="text-sm font-medium text-foreground">Of upload een afbeelding</p>
         <div className="flex flex-col gap-3">
           <label
             htmlFor="image-upload"
