@@ -8,9 +8,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Prompt of afbeelding is vereist" }, { status: 400 })
     }
 
-    const apiKey = process.env.HUGGINGFACE_API_KEY
+    const apiKey = process.env.GROQ_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: "Hugging Face API key niet geconfigureerd" }, { status: 500 })
+      return NextResponse.json({ error: "Groq API key niet geconfigureerd" }, { status: 500 })
     }
 
     // Construeer de messages voor OpenAI
@@ -88,17 +88,17 @@ Zorg dat:
       })
     }
 
-    // Call Hugging Face Inference API (OpenAI-compatible endpoint)
+    // Call Groq API (OpenAI-compatible, gratis en snel)
     const controller = new AbortController()
-    const chatTimeout = setTimeout(() => controller.abort(), 60000)
-    const response = await fetch("https://api-inference.huggingface.co/v1/chat/completions", {
+    const chatTimeout = setTimeout(() => controller.abort(), 30000)
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "mistralai/Mistral-7B-Instruct-v0.3",
+        model: "llama-3.1-8b-instant",
         messages: messages,
         temperature: 0.6,
         max_tokens: 2000,
@@ -109,9 +109,9 @@ Zorg dat:
 
     if (!response.ok) {
       const error = await response.json()
-      console.error("Hugging Face API Error:", error)
+      console.error("Groq API Error:", error)
       return NextResponse.json(
-        { error: `Hugging Face API error: ${error.error?.message || JSON.stringify(error)}` },
+        { error: `Groq API error: ${error.error?.message || JSON.stringify(error)}` },
         { status: response.status }
       )
     }
