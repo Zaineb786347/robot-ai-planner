@@ -119,12 +119,40 @@ Zorg dat:
     const data = await response.json()
     const content = data.choices[0].message.content
 
-    // Extraheer JSON uit de response (HF modellen voegen soms extra tekst toe)
+    // Extraheer JSON uit de response
     const jsonMatch = content.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return NextResponse.json({ error: "Geen geldige JSON ontvangen van het model" }, { status: 500 })
     }
-    const robotConfig = JSON.parse(jsonMatch[0])
+
+    // Fix ongeëscapede control characters in JSON strings (bijv. newlines in Arduino code)
+    const sanitizeJson = (str: string) => {
+      let inString = false
+      let escaped = false
+      let result = ""
+      for (const char of str) {
+        if (escaped) {
+          escaped = false
+          result += char
+        } else if (char === "\\" && inString) {
+          escaped = true
+          result += char
+        } else if (char === '"') {
+          inString = !inString
+          result += char
+        } else if (inString && char.charCodeAt(0) < 32) {
+          if (char === "\n") result += "\\n"
+          else if (char === "\r") result += "\\r"
+          else if (char === "\t") result += "\\t"
+          else result += `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`
+        } else {
+          result += char
+        }
+      }
+      return result
+    }
+
+    const robotConfig = JSON.parse(sanitizeJson(jsonMatch[0]))
 
     // Voeg ID toe aan de configuratie
     const configWithId = {
