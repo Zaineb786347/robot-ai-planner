@@ -11,9 +11,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Prompt of afbeelding is vereist" }, { status: 400 })
     }
 
-    const apiKey = process.env.OPENAI_API_KEY
+    const apiKey = process.env.HUGGINGFACE_API_KEY
     if (!apiKey) {
-      return NextResponse.json({ error: "OpenAI API key niet geconfigureerd" }, { status: 500 })
+      return NextResponse.json({ error: "Hugging Face API key niet geconfigureerd" }, { status: 500 })
     }
 
     // Construeer de messages voor OpenAI
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         role: "system",
         content: `Je bent een expert in robotica en Arduino programmering. Genereer een complete robot configuratie in JSON formaat op basis van de gebruikersinvoer.
 
-Het JSON object moet exact deze structuur hebben:
+Geef ALLEEN geldig JSON terug, geen andere tekst of uitleg. Het JSON object moet exact deze structuur hebben:
 {
   "name": "Robot Naam",
   "description": "Beschrijving van de robot",
@@ -62,7 +62,8 @@ Zorg dat:
 - Alle circuit connecties correct en specifiek zijn
 - Instructies gedetailleerd en in het Nederlands zijn
 - Performance scores tussen 0-100 zijn
-- Minimaal 2-3 optimalisaties worden gegeven`,
+- Minimaal 2-3 optimalisaties worden gegeven
+- Je antwoord begint met { en eindigt met }`,
       },
     ]
 
@@ -90,19 +91,18 @@ Zorg dat:
       })
     }
 
-    // Call OpenAI API (met timeout en lagere max_tokens voor snellere responses)
+    // Call Hugging Face Inference API (OpenAI-compatible endpoint)
     const controller = new AbortController()
-    const chatTimeout = setTimeout(() => controller.abort(), 30000)
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const chatTimeout = setTimeout(() => controller.abort(), 60000)
+    const response = await fetch("https://api-inference.huggingface.co/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: image ? "gpt-4o" : "gpt-4o-mini",
+        model: "mistralai/Mistral-7B-Instruct-v0.3",
         messages: messages,
-        response_format: { type: "json_object" },
         temperature: 0.6,
         max_tokens: 2000,
       }),
@@ -112,56 +112,27 @@ Zorg dat:
 
     if (!response.ok) {
       const error = await response.json()
-      console.error("OpenAI API Error:", error)
+      console.error("Hugging Face API Error:", error)
       return NextResponse.json(
-        { error: `OpenAI API error: ${error.error?.message || "Unknown error"}` },
+        { error: `Hugging Face API error: ${error.error?.message || JSON.stringify(error)}` },
         { status: response.status }
       )
     }
 
     const data = await response.json()
-    const robotConfig = JSON.parse(data.choices[0].message.content)
+    const content = data.choices[0].message.content
 
-    // Optioneel: genereer een afbeelding van de robot met DALL-E (kost extra tijd)
-    let imageUrl: string | undefined
-    if (withImage === true) {
-      try {
-        const imagePrompt = `A detailed 3D render of a ${robotConfig.name}: ${robotConfig.description}. The robot should look technical and realistic, showing the components like motors, sensors, and Arduino board. Studio lighting, white background, product photography style.`
-
-        const imageController = new AbortController()
-        const imageTimeout = setTimeout(() => imageController.abort(), 20000)
-        const imageResponse = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: imagePrompt,
-            n: 1,
-            size: "512x512",
-            quality: "standard",
-          }),
-          signal: imageController.signal,
-        })
-        clearTimeout(imageTimeout)
-
-        if (imageResponse.ok) {
-          const imageData = await imageResponse.json()
-          imageUrl = imageData.data?.[0]?.url
-        }
-      } catch (imageError) {
-        console.error("Error generating robot image:", imageError)
-        // Ga door zonder afbeelding
-      }
+    // Extraheer JSON uit de response (HF modellen voegen soms extra tekst toe)
+    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      return NextResponse.json({ error: "Geen geldige JSON ontvangen van het model" }, { status: 500 })
     }
+    const robotConfig = JSON.parse(jsonMatch[0])
 
-    // Voeg ID en imageUrl toe aan de configuratie
+    // Voeg ID toe aan de configuratie
     const configWithId = {
       id: Date.now().toString(),
       ...robotConfig,
-      imageUrl,
     }
 
     return NextResponse.json(configWithId)
