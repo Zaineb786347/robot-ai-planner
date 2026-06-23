@@ -64,29 +64,11 @@ Zorg dat:
       },
     ]
 
-    // Als er een afbeelding is, voeg deze toe aan de prompt
-    if (image) {
-      messages.push({
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: prompt || "Genereer een robot configuratie op basis van deze afbeelding.",
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: image,
-            },
-          },
-        ],
-      })
-    } else {
-      messages.push({
-        role: "user",
-        content: prompt,
-      })
-    }
+    // Altijd tekst gebruiken (Groq model ondersteunt geen vision)
+    messages.push({
+      role: "user",
+      content: prompt || "Genereer een robot configuratie op basis van een algemene robot.",
+    })
 
     // Call Groq API (OpenAI-compatible, gratis en snel)
     const controller = new AbortController()
